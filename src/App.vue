@@ -2,28 +2,35 @@
 import { computed, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { siteConfig } from './config/site.config'
-import { useSiteTheme } from './composables/useSiteTheme'
-import { useImagePreload } from './composables/useImagePreload'
-import { useApScrollbar } from './composables/useApScrollbar'
-import AppHeader from './components/layout/AppHeader.vue'
-import AppFooter from './components/layout/AppFooter.vue'
-import AppLoader from './components/AppLoader.vue'
-import ThemeSwitcher from './components/ThemeSwitcher.vue'
+import { useSiteTheme } from '@apotome/archetype-shared/composables/useSiteTheme'
+import { useImagePreload } from '@apotome/archetype-shared/composables/useImagePreload'
+import { useApScrollbar } from '@apotome/archetype-shared/composables/useApScrollbar'
+import { usePreferences } from '@apotome/archetype-shared/composables/usePreferences'
+import { variantAtLeast } from '@apotome/archetype-shared/themes/tokens'
+import AppHeader from '@apotome/archetype-shared/components/layout/AppHeader.vue'
+import AppFooter from '@apotome/archetype-shared/components/layout/AppFooter.vue'
+import AppLoader from '@apotome/archetype-shared/components/AppLoader.vue'
+import ThemeSwitcher from '@apotome/archetype-shared/components/ThemeSwitcher.vue'
 
-const { init } = useSiteTheme()
-const { isReady, preloadCritical } = useImagePreload()
+const { initFromConfig } = useSiteTheme()
+const { isReady, progress, loaded, total, label, preloadCritical } = useImagePreload()
 
 onMounted(async () => {
-  init(siteConfig.theme, siteConfig.swatch, siteConfig.variant, 'dine')
+  initFromConfig(siteConfig, 'dine')
   useApScrollbar()
-  await preloadCritical([
-    siteConfig.photos.hero.src,
-    siteConfig.photos.about.src,
-    ...siteConfig.photos.gallery.map(p => p.src),
-  ])
+  try {
+    await preloadCritical([
+      siteConfig.photos.hero.src,
+      siteConfig.photos.about.src,
+      ...siteConfig.photos.gallery.map(p => p.src),
+    ])
+  } catch {
+    // Malformed hydrated content must never strand the splash screen.
+    await preloadCritical([])
+  }
 })
 
-const showSwitcher = computed(() => import.meta.env.DEV)
+const showSwitcher = usePreferences().themePickerVisible
 
 const navLinks = computed(() => {
   const base = [
@@ -31,7 +38,7 @@ const navLinks = computed(() => {
     { to: '/menu', label: 'Menu' },
     { to: '/visit', label: 'Visit' },
   ]
-  if (siteConfig.variant === 'portfolio') {
+  if (variantAtLeast(siteConfig.variant, 'portfolio')) {
     base.splice(2, 0, { to: '/gallery', label: 'Gallery' })
   }
   return base
@@ -39,7 +46,7 @@ const navLinks = computed(() => {
 </script>
 
 <template>
-  <AppLoader :brand="siteConfig.brand" :visible="!isReady" />
+  <AppLoader :brand="siteConfig.brand" :visible="!isReady" :progress="progress" :loaded="loaded" :total="total" :label="label" />
   <AppHeader
     :brand="siteConfig.brand"
     :tagline="siteConfig.tagline"
