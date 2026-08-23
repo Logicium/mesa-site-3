@@ -30,8 +30,8 @@ const reviewItems = computed(() =>
     :image="siteConfig.photos.hero.src"
     :image-alt="siteConfig.photos.hero.alt"
     :images="isPortfolio ? [siteConfig.photos.hero, ...siteConfig.photos.gallery.slice(0, 3)] : []"
-    :cta-primary="{ label: 'See the menu', to: '/menu' }"
-    :cta-secondary="{ label: 'Find us', to: '/visit' }"
+    :cta-primary="{ label: siteConfig.sections.hero.ctaPrimary, to: '/menu' }"
+    :cta-secondary="{ label: siteConfig.sections.hero.ctaSecondary, to: '/visit' }"
     :layout="isPortfolio ? 'stage' : 'split'"
   />
   <AboutSection

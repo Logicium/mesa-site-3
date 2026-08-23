@@ -42,7 +42,9 @@ export interface MesaSiteConfig {
     reviews: { eyebrow: string }
     galleryPage: { eyebrow: string; title: string }
     menuPage: { eyebrow: string; title: string }
-    order: { eyebrow: string; title: string }
+    hero: { ctaPrimary: string; ctaSecondary: string }
+    order: { eyebrow: string; title: string; intro: string }
+    menu: { fullMenuLabel: string }
     visit: { eyebrow: string; title: string; subtitle: string }
     contact: { title: string }
   }
@@ -142,7 +144,13 @@ export const siteConfig: MesaSiteConfig = reactive(({
     reviews: { eyebrow: 'Kind words' },
     galleryPage: { eyebrow: 'Gallery', title: 'The kitchen, the room, the food' },
     menuPage: { eyebrow: 'Eat with us', title: 'The full menu' },
-    order: { eyebrow: 'Order', title: 'Order for pickup' },
+    hero: { ctaPrimary: 'See the menu', ctaSecondary: 'Find us' },
+    order: {
+      eyebrow: 'Order',
+      title: 'Order for pickup',
+      intro: 'Pick your items, choose a pickup time, and we\u2019ll have it ready.',
+    },
+    menu: { fullMenuLabel: 'View full menu' },
     visit: { eyebrow: 'Visit', title: 'Find your seat', subtitle: 'We are easy to find on Main Street, with parking on the cross streets.' },
     contact: { title: 'Reservations & questions' },
   },

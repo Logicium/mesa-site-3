@@ -24,11 +24,14 @@ const showOrdering = computed(() => store.hasAddOn('ordering'))
     v-if="showOrdering"
     :eyebrow="siteConfig.sections.order.eyebrow"
     :title="siteConfig.sections.order.title"
-    intro="Pick your items, choose a pickup time, and we'll have it ready."
+    :intro="siteConfig.sections.order.intro"
   />
 
   <MenuSection
     v-else
+    :eyebrow="siteConfig.sections.menuPage.eyebrow"
+    :title="siteConfig.sections.menuPage.title"
+    :full-menu-label="siteConfig.sections.menu.fullMenuLabel"
     :categories="siteConfig.menu.categories"
     :full-menu-url="siteConfig.menu.fullMenuUrl"
   />
