@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-interface MenuItem { name: string; description?: string; price: string; tags?: string[] }
+interface MenuItem { name: string; description?: string; price: string; sizes?: Array<{ label: string; price: string }>; tags?: string[] }
 interface MenuCategory { name: string; description?: string; items: MenuItem[] }
+
+import { displayMenuCategories } from '@apotome/archetype-shared/platform/menuSizes'
 
 const props = withDefaults(defineProps<{
   eyebrow?: string
@@ -24,15 +26,20 @@ const props = withDefaults(defineProps<{
    collapsible with counts, a chip rail jumps between them, and items flow
    into multiple dense columns so the width is actually used. Short menus are
    untouched — no accordions to click through for six dishes. */
+/* Sized dishes collapse to one line each before anything is counted or
+   rendered: explicit `sizes` merge into the price text, and legacy per-size
+   items ("Pepperoni 12\"" / "Pepperoni 16\"") are grouped the same way. */
+const displayCats = computed(() => displayMenuCategories(props.categories) as MenuCategory[])
+
 const LONG_MENU_ITEMS = 24
 const LONG_CATEGORY_ITEMS = 10
 
 const totalItems = computed(() =>
-  props.categories.reduce((n, c) => n + (c.items?.length ?? 0), 0))
+  displayCats.value.reduce((n, c) => n + (c.items?.length ?? 0), 0))
 
 const isLongMenu = computed(() =>
   totalItems.value > LONG_MENU_ITEMS ||
-  props.categories.some(c => (c.items?.length ?? 0) > LONG_CATEGORY_ITEMS))
+  displayCats.value.some(c => (c.items?.length ?? 0) > LONG_CATEGORY_ITEMS))
 
 /** Collapsed category names. Long menus open the first course only. */
 const collapsed = ref<Set<string>>(new Set())
@@ -41,7 +48,7 @@ const isCollapsed = (name: string) => {
   if (!isLongMenu.value) return false
   if (!seeded) {
     seeded = true
-    collapsed.value = new Set(props.categories.slice(1).map(c => c.name))
+    collapsed.value = new Set(displayCats.value.slice(1).map(c => c.name))
   }
   return collapsed.value.has(name)
 }
@@ -52,7 +59,7 @@ function toggleCategory(name: string) {
   collapsed.value = next
 }
 function expandAll() { collapsed.value = new Set() }
-function collapseAll() { collapsed.value = new Set(props.categories.map(c => c.name)) }
+function collapseAll() { collapsed.value = new Set(displayCats.value.map(c => c.name)) }
 const allExpanded = computed(() => collapsed.value.size === 0)
 
 const catId = (name: string) =>
@@ -88,7 +95,7 @@ function jumpTo(name: string) {
       <div v-if="isLongMenu" class="ap-menu__rail">
         <div class="ap-menu__rail-chips">
           <button
-            v-for="cat in categories"
+            v-for="cat in displayCats"
             :key="cat.name"
             type="button"
             class="ap-menu__rail-chip"
@@ -107,7 +114,7 @@ function jumpTo(name: string) {
       <div class="ap-menu__ledger" :class="{ 'is-long': isLongMenu }">
         <div class="ap-menu__cats">
           <section
-            v-for="cat in categories"
+            v-for="cat in displayCats"
             :key="cat.name"
             :id="catId(cat.name)"
             class="ap-menu__cat"
@@ -158,7 +165,7 @@ function jumpTo(name: string) {
       <!-- ── Style 2 · Tasting cards ── -->
       <div class="ap-menu__tasting">
         <section
-          v-for="cat in categories"
+          v-for="cat in displayCats"
           :key="cat.name"
           :id="catId(cat.name)"
           class="ap-menu__tasting-cat"
@@ -201,7 +208,7 @@ function jumpTo(name: string) {
       <!-- ── Style 3 · Chalkboard marquee ── -->
       <div class="ap-menu__chalk">
         <section
-          v-for="cat in categories"
+          v-for="cat in displayCats"
           :key="cat.name"
           :id="catId(cat.name)"
           class="ap-menu__chalk-cat"

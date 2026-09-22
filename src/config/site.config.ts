@@ -10,7 +10,9 @@ export interface MesaPhotos {
   gallery: PhotoSlot[]
 }
 
-export interface MenuItem { name: string; description?: string; price: string; tags?: string[] }
+/** One size of a dish ("12\"" at "$14"). A dish with `sizes` renders them in place of its single price. */
+export interface MenuItemSize { label: string; price: string }
+export interface MenuItem { name: string; description?: string; price: string; sizes?: MenuItemSize[]; tags?: string[] }
 export interface MenuCategory { name: string; description?: string; items: MenuItem[] }
 
 export interface MesaSiteConfig {
