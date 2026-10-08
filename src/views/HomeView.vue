@@ -15,6 +15,20 @@ const { variant: liveVariant } = useSiteTheme()
 const galleryLimit = computed(() => VARIANT_PHOTO_COUNT[resolveVariant(liveVariant.value)].gallery)
 const isPortfolio = computed(() => variantAtLeast(liveVariant.value, 'portfolio'))
 const content = useSiteContentStore()
+
+/** Hero ledger: the tagline plus the facts a visitor scans first. */
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const todayRow = computed(() => {
+  const d = days[new Date().getDay()]!.slice(0, 3).toLowerCase()
+  return siteConfig.hours.find(h => h.day.toLowerCase().startsWith(d))
+})
+const heroMeta = computed(() => {
+  const city = siteConfig.contact.address.split(',').slice(1, 3).map(s => s.trim()).join(', ')
+  const items: Array<{ label: string; value?: string }> = [{ label: siteConfig.tagline }]
+  if (city) items.push({ label: city })
+  if (todayRow.value) items.push({ label: 'Today', value: todayRow.value.open })
+  return items
+})
 const reviewItems = computed(() =>
   content.reviewsSource === 'google' && content.googleReviews.length
     ? content.googleReviews
@@ -30,6 +44,7 @@ const reviewItems = computed(() =>
     :image="siteConfig.photos.hero.src"
     :image-alt="siteConfig.photos.hero.alt"
     :images="isPortfolio ? [siteConfig.photos.hero, ...siteConfig.photos.gallery.slice(0, 3)] : []"
+    :meta="heroMeta"
     :cta-primary="{ label: siteConfig.sections.hero.ctaPrimary, to: '/menu' }"
     :cta-secondary="{ label: siteConfig.sections.hero.ctaSecondary, to: '/visit' }"
     :layout="isPortfolio ? 'stage' : 'split'"

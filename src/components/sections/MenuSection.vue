@@ -22,10 +22,11 @@ const props = withDefaults(defineProps<{
    same layout becomes an endless single column with a canyon of dotted
    leaders between short dish names and prices.
 
-   Past a threshold the section switches into "index" mode: categories become
-   collapsible with counts, a chip rail jumps between them, and items flow
-   into multiple dense columns so the width is actually used. Short menus are
-   untouched — no accordions to click through for six dishes. */
+   Past a threshold the section switches into "index" mode: a chip rail jumps
+   between courses and items flow into multiple dense columns so the width is
+   actually used. Every course stays open. Nothing on a menu is ever hidden
+   behind a click: a guest scanning for one dish must always be able to find
+   it by scrolling. */
 /* Sized dishes collapse to one line each before anything is counted or
    rendered: explicit `sizes` merge into the price text, and legacy per-size
    items ("Pepperoni 12\"" / "Pepperoni 16\"") are grouped the same way. */
@@ -41,38 +42,12 @@ const isLongMenu = computed(() =>
   totalItems.value > LONG_MENU_ITEMS ||
   displayCats.value.some(c => (c.items?.length ?? 0) > LONG_CATEGORY_ITEMS))
 
-/** Collapsed category names. Long menus open the first course only. */
-const collapsed = ref<Set<string>>(new Set())
-let seeded = false
-const isCollapsed = (name: string) => {
-  if (!isLongMenu.value) return false
-  if (!seeded) {
-    seeded = true
-    collapsed.value = new Set(displayCats.value.slice(1).map(c => c.name))
-  }
-  return collapsed.value.has(name)
-}
-function toggleCategory(name: string) {
-  const next = new Set(collapsed.value)
-  if (next.has(name)) next.delete(name)
-  else next.add(name)
-  collapsed.value = next
-}
-function expandAll() { collapsed.value = new Set() }
-function collapseAll() { collapsed.value = new Set(displayCats.value.map(c => c.name)) }
-const allExpanded = computed(() => collapsed.value.size === 0)
-
 const catId = (name: string) =>
   'menu-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
-/** Jump to a course from the chip rail, opening it if it was closed. */
+/** Jump to a course from the chip rail. */
 function jumpTo(name: string) {
-  const next = new Set(collapsed.value)
-  next.delete(name)
-  collapsed.value = next
-  requestAnimationFrame(() => {
-    document.getElementById(catId(name))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  })
+  document.getElementById(catId(name))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 </script>
 
@@ -83,7 +58,7 @@ function jumpTo(name: string) {
   Style 3 · Chalkboard — single dramatic column, oversized numbered courses
 -->
 <template>
-  <section class="ap-section ap-menu">
+  <section class="ap-section ap-menu" data-index>
     <div class="ap-container">
       <div class="ap-section-head">
         <span v-if="eyebrow" class="ap-eyebrow">{{ eyebrow }}</span>
@@ -105,9 +80,6 @@ function jumpTo(name: string) {
             <span class="ap-menu__rail-count">{{ cat.items.length }}</span>
           </button>
         </div>
-        <button type="button" class="ap-menu__rail-toggle" @click="allExpanded ? collapseAll() : expandAll()">
-          {{ allExpanded ? 'Collapse all' : 'Expand all' }}
-        </button>
       </div>
 
       <!-- ── Style 1 · Ledger (default) ── -->
@@ -118,32 +90,14 @@ function jumpTo(name: string) {
             :key="cat.name"
             :id="catId(cat.name)"
             class="ap-menu__cat"
-            :class="{ 'is-collapsed': isCollapsed(cat.name) }"
           >
             <header>
-              <component
-                :is="isLongMenu ? 'button' : 'div'"
-                :type="isLongMenu ? 'button' : undefined"
-                class="ap-menu__cat-head"
-                :class="{ 'is-toggle': isLongMenu }"
-                :aria-expanded="isLongMenu ? !isCollapsed(cat.name) : undefined"
-                :aria-controls="isLongMenu ? catId(cat.name) + '-items' : undefined"
-                @click="isLongMenu && toggleCategory(cat.name)"
-              >
+              <div class="ap-menu__cat-head">
                 <h3>{{ cat.name }}</h3>
-                <span v-if="isLongMenu" class="ap-menu__cat-meta">
-                  <span class="ap-menu__cat-count">{{ cat.items.length }}</span>
-                  <svg class="ap-menu__chev" viewBox="0 0 12 12" aria-hidden="true" width="12" height="12">
-                    <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5"
-                      stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-              </component>
+              </div>
               <p v-if="cat.description">{{ cat.description }}</p>
             </header>
             <ul
-              v-show="!isCollapsed(cat.name)"
-              :id="catId(cat.name) + '-items'"
               :class="{ 'ap-menu__items--dense': isLongMenu && cat.items.length > 6 }"
             >
               <li v-for="item in cat.items" :key="item.name" class="ap-menu__item">
@@ -171,26 +125,12 @@ function jumpTo(name: string) {
           class="ap-menu__tasting-cat"
         >
           <header class="ap-menu__tasting-head">
-            <component
-              :is="isLongMenu ? 'button' : 'div'"
-              :type="isLongMenu ? 'button' : undefined"
-              class="ap-menu__cat-head"
-              :class="{ 'is-toggle': isLongMenu }"
-              :aria-expanded="isLongMenu ? !isCollapsed(cat.name) : undefined"
-              @click="isLongMenu && toggleCategory(cat.name)"
-            >
+            <div class="ap-menu__cat-head">
               <h3>{{ cat.name }}</h3>
-              <span v-if="isLongMenu" class="ap-menu__cat-meta">
-                <span class="ap-menu__cat-count">{{ cat.items.length }}</span>
-                <svg class="ap-menu__chev" viewBox="0 0 12 12" aria-hidden="true" width="12" height="12">
-                  <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </span>
-            </component>
+            </div>
             <p v-if="cat.description">{{ cat.description }}</p>
           </header>
-          <ul v-show="!isCollapsed(cat.name)" class="ap-menu__tasting-grid">
+          <ul class="ap-menu__tasting-grid">
             <li v-for="item in cat.items" :key="item.name" class="ap-menu__tasting-card">
               <div class="ap-menu__tasting-top">
                 <h4>{{ item.name }}</h4>
@@ -214,26 +154,12 @@ function jumpTo(name: string) {
           class="ap-menu__chalk-cat"
         >
           <header class="ap-menu__chalk-head">
-            <component
-              :is="isLongMenu ? 'button' : 'div'"
-              :type="isLongMenu ? 'button' : undefined"
-              class="ap-menu__chalk-toggle"
-              :class="{ 'is-toggle': isLongMenu }"
-              :aria-expanded="isLongMenu ? !isCollapsed(cat.name) : undefined"
-              @click="isLongMenu && toggleCategory(cat.name)"
-            >
+            <div class="ap-menu__chalk-toggle">
               <span class="ap-menu__chalk-marker">— {{ cat.name }} —</span>
-              <span v-if="isLongMenu" class="ap-menu__cat-meta">
-                <span class="ap-menu__cat-count">{{ cat.items.length }}</span>
-                <svg class="ap-menu__chev" viewBox="0 0 12 12" aria-hidden="true" width="12" height="12">
-                  <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </span>
-            </component>
+            </div>
             <p v-if="cat.description">{{ cat.description }}</p>
           </header>
-          <ol v-show="!isCollapsed(cat.name)" class="ap-menu__chalk-list">
+          <ol class="ap-menu__chalk-list">
             <li v-for="(item, i) in cat.items" :key="item.name" class="ap-menu__chalk-row">
               <span class="ap-menu__chalk-num">{{ String(i + 1).padStart(2, '0') }}</span>
               <div class="ap-menu__chalk-body">
@@ -293,17 +219,6 @@ function jumpTo(name: string) {
   color: var(--ap-ink-muted);
   font-variant-numeric: tabular-nums;
 }
-.ap-menu__rail-toggle {
-  border: 0; background: none; padding: 0.3rem 0;
-  color: var(--ap-ink-muted);
-  font: inherit; font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  border-bottom: 1px solid transparent;
-  transition: color 140ms ease, border-color 140ms ease;
-  flex-shrink: 0;
-}
-.ap-menu__rail-toggle:hover { color: var(--ap-ink); border-bottom-color: var(--ap-primary); }
 
 .ap-menu__cat-head {
   display: flex; align-items: baseline; justify-content: space-between;
@@ -311,28 +226,12 @@ function jumpTo(name: string) {
   padding: 0; border: 0; background: none;
   color: inherit; font: inherit; text-align: left;
 }
-.ap-menu__cat-head.is-toggle { cursor: pointer; }
-.ap-menu__cat-head.is-toggle:hover h3 { color: var(--ap-primary); }
-.ap-menu__cat-meta {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  color: var(--ap-ink-muted);
-  flex-shrink: 0;
-}
-.ap-menu__cat-count {
-  font-family: var(--ap-font-mono);
-  font-size: 0.7rem;
-  font-variant-numeric: tabular-nums;
-}
-.ap-menu__chev { transition: transform 220ms cubic-bezier(0.2, 0.7, 0.3, 1); }
-.ap-menu__cat.is-collapsed .ap-menu__chev,
-.ap-menu__cat-head[aria-expanded='false'] .ap-menu__chev { transform: rotate(-90deg); }
 
 .ap-menu__chalk-toggle {
   display: flex; align-items: center; justify-content: center; gap: 0.6rem;
   width: 100%; padding: 0; border: 0; background: none;
   color: inherit; font: inherit;
 }
-.ap-menu__chalk-toggle.is-toggle { cursor: pointer; }
 
 /* ── Style 1 · Ledger ────────────────────────────────────── */
 .ap-menu__cats {
